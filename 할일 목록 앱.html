@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>할일 관리 앱</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .todo-container { 
+      background-color: #fff; 
+      padding: 20px; 
+      border-radius: 8px; 
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); 
+      max-width: 400px; 
+      width: 100%;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    input[type="text"], input[type="date"] {
+      width: calc(100% - 22px);
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    button {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #218838;
+    }
+
+    .todo-list { 
+      list-style: none; 
+      padding: 0; 
+      margin-top: 20px;
+    }
+
+    .todo-item { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      padding: 10px 0; 
+      border-bottom: 1px solid #ddd; 
+    }
+
+    .completed { 
+      text-decoration: line-through; 
+      color: gray; 
+    }
+
+    button.todo-btn {
+      background-color: #007bff;
+      margin-left: 5px;
+      padding: 5px 10px;
+    }
+
+    button.todo-btn:hover {
+      background-color: #0056b3;
+    }
+
+    button.delete-btn {
+      background-color: #dc3545;
+    }
+
+    button.delete-btn:hover {
+      background-color: #c82333;
+    }
+
+    select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="todo-container">
+    <h1>할일 관리</h1>
+    <input type="text" id="newTodo" placeholder="할일 추가">
+    <input type="date" id="dueDate" placeholder="마감일">
+    <button id="addTodoBtn">추가</button>
+    <br><br>
+    <select id="filter">
+      <option value="all">전체</option>
+      <option value="completed">완료된 할일</option>
+      <option value="incomplete">미완료 할일</option>
+    </select>
+    <ul class="todo-list" id="todoList"></ul>
+  </div>
+
+  <script>
+    // 비즈니스 로직을 관리하는 객체
+    const todoApp = {
+      todos: [],
+      
+      addTodo(todoText, dueDate) {
+        const todo = {
+          id: Date.now(),
+          text: todoText,
+          completed: false,
+          dueDate: dueDate || "없음"
+        };
+        this.todos.push(todo);
+      },
+
+      toggleTodo(id) {
+        const todo = this.todos.find(todo => todo.id === id);
+        if (todo) {
+          todo.completed = !todo.completed;
+        }
+      },
+
+      deleteTodo(id) {
+        this.todos = this.todos.filter(todo => todo.id !== id);
+      },
+
+      editTodo(id, newText) {
+        const todo = this.todos.find(todo => todo.id === id);
+        if (todo) {
+          todo.text = newText;
+        }
+      },
+
+      getTodos(filter = 'all') {
+        if (filter === 'completed') {
+          return this.todos.filter(todo => todo.completed);
+        } else if (filter === 'incomplete') {
+          return this.todos.filter(todo => !todo.completed);
+        }
+        return this.todos;
+      }
+    };
+
+    // 렌더링 로직
+    function renderTodos(filter = 'all') {
+      const todoList = document.getElementById('todoList');
+      todoList.innerHTML = ''; // 기존 항목들을 초기화
+      
+      const todos = todoApp.getTodos(filter);
+      todos.forEach(todo => {
+        const li = document.createElement('li');
+        li.className = 'todo-item';
+        li.innerHTML = `
+          <span class="${todo.completed ? 'completed' : ''}">${todo.text} (마감일: ${todo.dueDate})</span>
+          <button class="todo-btn" onclick="toggleTodo(${todo.id})">완료</button>
+          <button class="todo-btn" onclick="editTodoPrompt(${todo.id})">수정</button>
+          <button class="delete-btn" onclick="deleteTodo(${todo.id})">삭제</button>
+        `;
+        todoList.appendChild(li);
+      });
+    }
+
+    // 이벤트 핸들러
+    document.getElementById('addTodoBtn').addEventListener('click', () => {
+      const newTodo = document.getElementById('newTodo').value;
+      const dueDate = document.getElementById('dueDate').value;
+      if (newTodo.trim()) {
+        todoApp.addTodo(newTodo.trim(), dueDate);
+        document.getElementById('newTodo').value = ''; // 입력창 초기화
+        document.getElementById('dueDate').value = ''; // 마감일 초기화
+        renderTodos(); // UI 업데이트
+      }
+    });
+
+    document.getElementById('filter').addEventListener('change', (e) => {
+      renderTodos(e.target.value); // 필터링에 따라 렌더링
+    });
+
+    function toggleTodo(id) {
+      todoApp.toggleTodo(id);
+      renderTodos();
+    }
+
+    function deleteTodo(id) {
+      todoApp.deleteTodo(id);
+      renderTodos();
+    }
+
+    function editTodoPrompt(id) {
+      const newText = prompt('새로운 할일 내용을 입력하세요:');
+      if (newText) {
+        todoApp.editTodo(id, newText);
+        renderTodos();
+      }
+    }
+
+    // 초기 렌더링
+    renderTodos();
+  </script>
+
+</body>
+</html>
